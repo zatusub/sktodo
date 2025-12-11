@@ -48,17 +48,67 @@ jobs:
         id: api-call
         env:
           DIFF_CONTENT: ${{ steps.get-diff.outputs.result }}
+          API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
         run: |
+          # API エンドポイントの検証
+          if [ -z "$API_ENDPOINT" ]; then
+            echo "Error: API_ENDPOINT secret is not set" >&2
+            echo "Please configure the API_ENDPOINT secret in your repository settings" >&2
+            exit 1
+          fi
+
+          # DIFFコンテンツの検証
+          if [ -z "$DIFF_CONTENT" ]; then
+            echo "Warning: No diff content found. Sending empty content." >&2
+            DIFF_CONTENT="No changes detected"
+          fi
+
           # 整形済みテキストをcontentフィールドにセット（環境変数を使用してbash解釈を回避）
           body=$(jq -n --arg content "$DIFF_CONTENT" '{content: $content}')
+          
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to create JSON payload" >&2
+            exit 1
+          fi
 
-          response=$(curl -s -X POST ${{ secrets.API_ENDPOINT }} \
+          # APIコール実行（詳細なエラー情報を取得）
+          http_code=$(curl -s -w "%{http_code}" -o /tmp/response.txt -X POST "$API_ENDPOINT" \
             -H "Content-Type: application/json" \
             -d "$body")
+          
+          curl_exit_code=$?
+          
+          # curlの実行結果を検証
+          if [ $curl_exit_code -ne 0 ]; then
+            echo "Error: curl command failed with exit code $curl_exit_code" >&2
+            echo "API Endpoint: $API_ENDPOINT" >&2
+            case $curl_exit_code in
+              2) echo "Details: curl failed to initialize or invalid parameters" >&2 ;;
+              6) echo "Details: Could not resolve host" >&2 ;;
+              7) echo "Details: Failed to connect to host" >&2 ;;
+              28) echo "Details: Operation timeout" >&2 ;;
+              *) echo "Details: Unknown curl error. Check network connectivity and API endpoint." >&2 ;;
+            esac
+            exit 1
+          fi
+
+          # HTTPステータスコードを検証
+          response=$(cat /tmp/response.txt)
+          
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "API call successful (HTTP $http_code)"
+          else
+            echo "Warning: API returned HTTP status code $http_code" >&2
+            echo "Response: $response" >&2
+          fi
 
           # レスポンスを環境変数に保存（複数行対応）
           echo "response<<EOF" >> $GITHUB_OUTPUT
           echo "$response" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "http_code<<EOF" >> $GITHUB_OUTPUT
+          echo "$http_code" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Comment API response on PR
