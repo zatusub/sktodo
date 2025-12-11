@@ -52,8 +52,8 @@ jobs:
           # 整形済みテキストをcontentフィールドにセット（環境変数を使用してbash解釈を回避）
           body=$(jq -n --arg content "$DIFF_CONTENT" '{content: $content}')
 
-          response=$(curl -s -X POST ${{ secrets.API_ENDPOINT }} \\
-            -H "Content-Type: application/json" \\
+          response=$(curl -s -X POST ${{ secrets.API_ENDPOINT }} \
+            -H "Content-Type: application/json" \
             -d "$body")
 
           # レスポンスを環境変数に保存（複数行対応）
