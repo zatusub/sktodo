@@ -136,7 +136,8 @@ jobs:
 
   # すべてのブランチでデプロイを許可
   deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: pr-review
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     permissions:
       id-token: write
