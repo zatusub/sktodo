@@ -1,9 +1,15 @@
-name: Smart API Call
+name: CI Pipeline
+
 on:
   pull_request:
     types: [opened, synchronize]
+  push:
+  workflow_dispatch:
+
 jobs:
-  analyze-pr:
+  # PRが作成・更新された時にBedrockでコードレビュー
+  pr-review:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -127,3 +133,56 @@ jobs:
               repo: context.repo.repo,
               body: commentBody
             });
+
+  # すべてのブランチでデプロイを許可（PR時を除く）
+  deploy:
+    needs: pr-review
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_IAM_ROLE_ARN: ${{ vars.AWS_IAM_ROLE_ARN }}
+      AWS_REGION: "ap-northeast-1"
+      AMPLIFY_APP_ID: ${{ vars.AMPLIFY_APP_ID }}
+      AMPLIFY_ENV_NAME: "main"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_IAM_ROLE_ARN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build frontend
+        run: npm run build
+        
+      - name: Create deployment and upload
+        run: |
+          echo "Creating frontend deployment job"
+          RESPONSE=$(aws amplify create-deployment --branch-name ${{ env.AMPLIFY_ENV_NAME}} --app-id ${{ env.AMPLIFY_APP_ID }})
+          JOB_ID=$(echo $RESPONSE | jq -r '.jobId')
+          ZIP_URL=$(echo $RESPONSE | jq -r '.zipUploadUrl')
+          
+          echo "Zipping build artifacts"
+          cd ./dist && zip -r ../build.zip * && cd ..
+          
+          echo "Uploading build.zip to Amplify"
+          curl -X PUT -T "./build.zip" -H "Content-Type: application/zip" "$ZIP_URL"
+          
+          echo "Starting deployment job"
+          aws amplify start-deployment --app-id ${{ env.AMPLIFY_APP_ID }} --branch-name ${{ env.AMPLIFY_ENV_NAME}} --job-id $JOB_ID
+          
+          echo "Deployment initiated successfully!"
