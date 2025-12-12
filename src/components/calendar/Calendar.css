@@ -92,9 +92,11 @@
 }
 
 .calendar-day:not(.empty):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* 固定UIが不安定になるためtranslateYを削除 */
+  /* transform: translateY(-2px); */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   border-color: #667eea;
+  z-index: 10;
 }
 
 .calendar-day.empty {
@@ -102,14 +104,49 @@
   border: none;
 }
 
+/* TODOがない日のスタイル（上下が伸びて真ん中が縮む＝紙がくびれたような形状） */
+/* TODOがない日のスタイル（上下が伸びて真ん中が縮む＝紙がくびれたような形状） */
+.calendar-day:not(.has-todos):not(.empty):not(.today) {
+  /* 背景色：白にして紙っぽさを出す */
+  background-color: #ffffff;
+  
+  /* マスクを使って左右の真ん中を丸く切り取る（チケットの半円切り欠きスタイル） */
+  --notch-size: 12px; /* 切り欠きの深さ */
+  
+  -webkit-mask: 
+    radial-gradient(circle at left center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) right / 51% 100% no-repeat;
+          
+  mask: 
+    radial-gradient(circle at left center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) right / 51% 100% no-repeat;
+  
+  /* 枠線の代わりにドロップシャドウで形状を浮き上がらせる */
+  border: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+  
+  /* 余白調整 */
+  margin: 4px 0;
+}
+
+/* くびれスタイルの日にホバーしたとき */
+.calendar-day:not(.has-todos):not(.empty):not(.today):hover {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+  background-color: #fafafa;
+  /* translateYは入れない（安定性のため） */
+}
+
+/* TODOがある日のスタイル（通常の四角いカード） */
+.calendar-day.has-todos {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #dee2e6;
+}
+
 .calendar-day.today {
   background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
   border: 2px solid #f5576c;
   box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
-}
-
-.calendar-day.has-todos {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  z-index: 5;
 }
 
 .day-number {
@@ -163,7 +200,8 @@
 }
 
 .todo-item:hover {
-  transform: scale(1.05);
+  /* scaleはレイアウトへの影響やぼやけの原因になるため、色変更のみにする */
+  opacity: 0.9;
   box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
 }
 

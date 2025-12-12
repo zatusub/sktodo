@@ -1,7 +1,6 @@
-import React from 'react';
 import Calendar from '../components/calendar/Calendar';
 
-const CalendarTestPage: React.FC = () => {
+const CalendarTestPage = () => {
   const todos = [
     { content: "プロジェクト提出", deadline: "2025-12-15" },
     { content: "会議準備", deadline: "2025-12-20" },
