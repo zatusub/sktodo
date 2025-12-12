@@ -136,9 +136,9 @@ jobs:
               body: commentBody
             });
 
-  # mainブランチへのプッシュ時にAmplifyへデプロイ
+  # すべてのブランチでデプロイを許可
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
