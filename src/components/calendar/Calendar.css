@@ -1,0 +1,240 @@
+.calendar-wrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.current-month {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.nav-button {
+  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.nav-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.today-button {
+  display: block;
+  margin: 10px auto 20px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+}
+
+.today-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.weekday-header {
+  padding: 12px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #495057;
+  background-color: #e9ecef;
+  border-radius: 6px;
+}
+
+.calendar-day {
+  min-height: 100px;
+  padding: 8px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-day:not(.empty):hover {
+  /* 固定UIが不安定になるためtranslateYを削除 */
+  /* transform: translateY(-2px); */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-color: #667eea;
+  z-index: 10;
+}
+
+.calendar-day.empty {
+  background-color: transparent;
+  border: none;
+}
+
+/* TODOがない日のスタイル（上下が伸びて真ん中が縮む＝紙がくびれたような形状） */
+/* TODOがない日のスタイル（上下が伸びて真ん中が縮む＝紙がくびれたような形状） */
+.calendar-day:not(.has-todos):not(.empty):not(.today) {
+  /* 背景色：白にして紙っぽさを出す */
+  background-color: #ffffff;
+  
+  /* マスクを使って左右の真ん中を丸く切り取る（チケットの半円切り欠きスタイル） */
+  --notch-size: 12px; /* 切り欠きの深さ */
+  
+  -webkit-mask: 
+    radial-gradient(circle at left center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) right / 51% 100% no-repeat;
+          
+  mask: 
+    radial-gradient(circle at left center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--notch-size), black calc(var(--notch-size) + 0.5px)) right / 51% 100% no-repeat;
+  
+  /* 枠線の代わりにドロップシャドウで形状を浮き上がらせる */
+  border: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+  
+  /* 余白調整 */
+  margin: 4px 0;
+}
+
+/* くびれスタイルの日にホバーしたとき */
+.calendar-day:not(.has-todos):not(.empty):not(.today):hover {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+  background-color: #fafafa;
+  /* translateYは入れない（安定性のため） */
+}
+
+/* TODOがある日のスタイル（通常の四角いカード） */
+.calendar-day.has-todos {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #dee2e6;
+}
+
+.calendar-day.today {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+  border: 2px solid #f5576c;
+  box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+  z-index: 5;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 6px;
+}
+
+.today .day-number {
+  color: #f5576c;
+}
+
+.todos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 70px;
+  overflow-y: auto;
+}
+
+.todos-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.todos-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.todos-container::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 2px;
+}
+
+.todos-container::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.todo-item {
+  padding: 6px 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.todo-item:hover {
+  /* scaleはレイアウトへの影響やぼやけの原因になるため、色変更のみにする */
+  opacity: 0.9;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+  .calendar-wrapper {
+    padding: 10px;
+  }
+
+  .calendar-header {
+    padding: 10px;
+  }
+
+  .current-month {
+    font-size: 18px;
+  }
+
+  .nav-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .calendar-day {
+    min-height: 80px;
+    padding: 6px;
+  }
+
+  .day-number {
+    font-size: 14px;
+  }
+
+  .todo-item {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+}
