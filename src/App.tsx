@@ -1,11 +1,11 @@
 import { AchieveButton } from './components/achieve/AchieveButton';
 import './App.css'
 import { TodoDetailDisplay } from './components/achieve/TodoDetailDisplay';
+import { CrossButton } from './components/achieve/CrossButton';
 import { useState, useEffect } from 'react';
 import TaskJama from './task-jama/task-jama';
 import Calendar from './components/calendar/Calendar';
 import { Auth } from './components/authorize/auth';
-
 function App() {
   const [showTaskJama, setShowTaskJama] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -47,6 +47,7 @@ function App() {
     <>
       <AchieveButton />
       <TodoDetailDisplay />
+      <CrossButton />
       <div style={{ position: 'fixed', top: 12, right: 12 }}>
         <button onClick={() => setShowTaskJama(true)}>友達のタスクを邪魔しよう</button>
       </div>

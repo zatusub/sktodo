@@ -1,0 +1,30 @@
+.cross-button {
+  /* ボタンを無駄に巨大化 */
+  font-size: 3rem;
+  padding: 50px;
+  border-radius: 50%;
+  
+  /* 虹色に点滅 */
+  background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+  animation: rainbow 1s infinite;
+  
+  /* 文字を回転させる */
+  transform: rotate(-15deg);
+  color: white;
+  text-shadow: 5px 5px 10px black;
+  cursor: pointer;
+}
+
+/* 虹色アニメーション */
+@keyframes rainbow {
+  0%   { filter: hue-rotate(0deg); }
+  50%  { filter: hue-rotate(180deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* ホバー時にさらにふざける */
+.cross-button:hover {
+  transform: rotate(360deg) scale(1.5);
+  background: repeating-conic-gradient(pink, cyan, lime, pink);
+  box-shadow: 0 0 50px magenta;
+}
