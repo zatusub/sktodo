@@ -1,5 +1,6 @@
 import { AchieveButton } from './components/achieve/AchieveButton';
 import './App.css'
+import { TodoDetailDisplay } from './components/achieve/TodoDetailDisplay';
 import { useState, useEffect } from 'react';
 import TaskJama from './task-jama/task-jama';
 import Calendar from './components/calendar/Calendar';
@@ -33,10 +34,12 @@ function App() {
   return (
     <>
       <AchieveButton />
+      <TodoDetailDisplay />
       <div style={{ position: 'fixed', top: 12, right: 12 }}>
         <button onClick={() => setShowTaskJama(true)}>友達のタスクを邪魔しよう</button>
       </div>
     </>
+   
   )
 }
 
