@@ -4,9 +4,12 @@ import { TodoDetailDisplay } from './components/achieve/TodoDetailDisplay';
 import { useState, useEffect } from 'react';
 import TaskJama from './task-jama/task-jama';
 import Calendar from './components/calendar/Calendar';
+import { Auth } from './components/authorize/auth';
 
 function App() {
   const [showTaskJama, setShowTaskJama] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
   const todos = [
     { content: "プロジェクト提出", deadline: "2025-12-15" },
     { content: "会議準備", deadline: "2025-12-20" },
@@ -22,10 +25,19 @@ function App() {
     return () => document.body.classList.remove('full-bleed');
   }, [showTaskJama]);
 
+  // Handle Login
+  const handleLogin = (id: string) => {
+    setUserId(id);
+  };
+
+  if (!userId) {
+    return <Auth onLogin={handleLogin} />;
+  }
+
   if (showTaskJama) {
     return (
       <>
-        <TaskJama />
+        <TaskJama userId={userId} />
         <Calendar todos={todos} />
       </>
     );
