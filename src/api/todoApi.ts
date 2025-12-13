@@ -8,6 +8,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // モックユーザーデータ
 const mockUser: User = {
   user_id: 'user-1',
+  email: 'raimu@example.com',
   username: 'らいむ',
   points: 1250,
 };
@@ -19,32 +20,40 @@ const mockTodos: Todo[] = [
     user_id: 'user-1',
     title: '朝4時に起きる',
     description: 'もう起床時間からやり直そう',
-    completed: false,
+    is_completed: false,
+    is_disguised: false,
     created_at: '2025-12-10T08:00:00Z',
+    updated_at: '2025-12-10T08:00:00Z',
   },
   {
     todo_id: 'todo-2',
     user_id: 'user-1',
     title: '今日の報告書を提出する',
     description: '15時までに完成させる',
-    completed: false,
+    is_completed: false,
+    is_disguised: false,
     created_at: '2025-12-11T09:30:00Z',
+    updated_at: '2025-12-11T09:30:00Z',
   },
   {
     todo_id: 'todo-3',
     user_id: 'user-1',
     title: '筋トレを1時間やる',
     description: 'ジムで背中と胸を鍛える',
-    completed: false,
+    is_completed: false,
+    is_disguised: false,
     created_at: '2025-12-12T07:00:00Z',
+    updated_at: '2025-12-12T07:00:00Z',
   },
   {
     todo_id: 'todo-4',
     user_id: 'user-1',
     title: 'ドキュメント更新',
     description: 'APIドキュメントを最新版に',
-    completed: true,
+    is_completed: true,
+    is_disguised: false,
     created_at: '2025-12-09T10:00:00Z',
+    updated_at: '2025-12-09T10:00:00Z',
   },
 ];
 
@@ -140,13 +149,16 @@ export async function completeTodo(todoId: string): Promise<Todo> {
   await delay(300);
   const todo = mockTodos.find(t => t.todo_id === todoId);
   if (todo) {
-    todo.completed = true;
+    todo.is_completed = true;
   }
   return todo!;
 }
 
 export async function addPoints(userId: string, points: number): Promise<User> {
   await delay(300);
+  if (mockUser.user_id !== userId) {
+    throw new Error('User not found');
+  }
   mockUser.points += points;
   return mockUser;
 }

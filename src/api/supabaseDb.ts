@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient'
-import { User, Todo } from './models'
+import type { User, Todo } from './models'
 
 // ===================================================================
 // users テーブル
@@ -332,7 +332,7 @@ export const getReceivedDisruptions = async (userId: string) => {
       return []
     }
 
-    const todoIds = todos?.map(t => t.todo_id) || []
+    const todoIds = (todos as { todo_id: string }[] | undefined)?.map(t => t.todo_id) || []
     if (todoIds.length === 0) return []
 
     const { data, error } = await supabase
