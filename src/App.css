@@ -40,33 +40,3 @@
 .read-the-docs {
   color: #888;
 }
-.todo-detail h1 {
-  margin-bottom: 16px; /* タスク名の下に余白 */
-  line-height: 2;       /* 行間を広げる */
-}
-
-.todo-detail p {
-  margin-bottom: 12px; /* 各段落の下に余白 */
-  line-height: 1.8;     /* 段落の行間 */
-}
-
-.todo-detail .detail {
-  font-size: 2.2em;
-}
-
-.todo-detail .info {
-  font-size: 2.2em;
-}
-
-.todo-detail button {
-  background-color: #4CAF50; /* 背景色（緑） */
-  color: white;              /* 文字色（白） */
-  border: none;              /* 枠線を消す */
-  padding: 8px 16px;         /* 内側余白 */
-  font-size: 1em;            /* 文字サイズ */
-  cursor: pointer;           /* ホバー時にポインタ表示 */
-}
-
-.todo-detail button:hover {
-  background-color: #45a049; /* ホバー時の色 */
-}
