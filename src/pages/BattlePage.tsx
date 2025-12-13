@@ -31,6 +31,11 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
   const [isJamaActive, setIsJamaActive] = useState(false);
   const [jamaMessage, setJamaMessage] = useState('');
 
+  // Scoring States
+  const [myScore, setMyScore] = useState<number | null>(null);
+  const [opponentScore, setOpponentScore] = useState<number | null>(null);
+  const [isScoring, setIsScoring] = useState(false);
+
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -42,7 +47,6 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
     const unregister = registerHandler((msg: WebSocketMessage) => {
       switch (msg.type) {
         case 'game_start':
-          // { opponentTodo: {...}, startTime: number }
           setOpponentTodo(msg.content.opponentTodo);
           setPhase('BATTLE');
           startTimer();
@@ -50,15 +54,18 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
         case 'chat':
           setChats(prev => [...prev, { sender: 'opponent', text: msg.content }]);
           break;
-        case 'result':
-          setResult(msg.content);
-          setPhase('RESULT');
-          if (timerRef.current) clearInterval(timerRef.current);
+        case 'share_score':
+          // 相手からスコアが送られてきた
+          console.log('Received opponent score:', msg.content);
+          setOpponentScore(msg.content.score);
           break;
-        case 'jama':
-          setIsJamaActive(true);
-          setJamaMessage(msg.content || 'PENALTY ACTIVATED!');
-          triggerMojibakeEffect();
+        case 'score_calculated':
+          // サーバーでの計算結果が返ってきた
+          console.log('My Calculated Score:', msg.content.score);
+          const s = msg.content.score;
+          setMyScore(s);
+          // 相手にシェア
+          sendMessage('share_score', { score: s, userId });
           break;
       }
     });
@@ -67,7 +74,31 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
         unregister();
         if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [userId, registerHandler, navigate]);
+  }, [userId, registerHandler, navigate, sendMessage]);
+
+  // ローカル勝敗判定
+  useEffect(() => {
+    if (myScore !== null && opponentScore !== null && !result) {
+        // 双方が揃った
+        const isWin = myScore >= opponentScore;
+        const resultData = {
+            winner: isWin ? userId : (opponentId || 'opponent'),
+            [userId]: { score: myScore },
+            [opponentId || 'opponent']: { score: opponentScore },
+            reason: `Battle Finished. Scores: You(${myScore}) vs Opponent(${opponentScore})`
+        };
+        
+        setResult(resultData);
+        setPhase('RESULT');
+        setIsScoring(false);
+
+        if (!isWin) {
+            setIsJamaActive(true);
+            setJamaMessage('YOU LOSE! SYSTEM MALFUNCTION!');
+            triggerMojibakeEffect();
+        }
+    }
+  }, [myScore, opponentScore, result, userId, opponentId]);
 
   const startTimer = () => {
     setTimeLeft(30);
@@ -83,9 +114,15 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
     }, 1000);
   };
 
-  const handleTimeUp = () => {
-    // Ideally user sends 'finish' or server handles timeout
-    sendMessage('finish', {});
+  const handleTimeUp = async () => {
+    setIsScoring(true);
+    
+    // 1. Send Calc Request to Server Proxy
+    const myChatLog = chats.filter(c => c.sender === 'me').map(c => c.text).join('\n');
+    console.log('Requesting score calculation...', { myTodo, myChatLog });
+    
+    // fetchScore (direct) is removed due to CORS. Using WS proxy instead.
+    sendMessage('calculate_score', { todo: myTodo, chat: myChatLog });
   };
 
   const [isWaiting, setIsWaiting] = useState(false);
@@ -105,7 +142,6 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
   };
 
   const triggerMojibakeEffect = () => {
-    // Simple visual corruption effect on DOM
     document.body.style.filter = 'hue-rotate(90deg) contrast(200%)';
     setTimeout(() => {
         document.body.style.filter = '';
@@ -419,7 +455,10 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
           </p>
           
           <button 
-            onClick={() => navigate('/')} 
+            onClick={() => {
+                sendMessage('cleanup', {});
+                navigate('/');
+            }} 
             style={{ 
                 marginTop: '60px', 
                 padding: '15px 40px', 

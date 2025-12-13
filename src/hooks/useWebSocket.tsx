@@ -12,7 +12,11 @@ export type MessageType =
   | 'chat' 
   | 'result' 
   | 'jama' 
-  | 'finish'; 
+  | 'finish'
+  | 'share_score'
+  | 'cleanup'
+  | 'calculate_score'
+  | 'score_calculated'; 
 
 export interface WebSocketMessage {
   type: MessageType;

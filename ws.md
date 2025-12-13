@@ -282,7 +282,8 @@ const fetchAndExtractScore = async (todoTitle, chatLog) => {
             // 3. マッチした部分をJSONパース
             const jsonStr = match[0];
             const result = JSON.parse(jsonStr);
-            return { score: result.score || 0 };
+            // テキストが含まれる場合でもスコアを返すように修正
+            return { score: result.text ? (result.score || 0) : (result.score || 0) };
         } else {
             console.warn("No JSON found in response from AI API");
             return { score: 0 };
@@ -320,15 +321,12 @@ export const handler = async (event) => {
         }
     };
 
-    // $connect, $disconnect の処理はここでは割愛（$default/メッセージ処理のみに集中）
+    // $connect, $disconnect
     if (!event.body) {
         if (event.requestContext.routeKey === "$connect") {
-            // $connect の初期処理 (connectionIdをテーブルにPutする処理など) が必要ですが、
-            // $defaultでの処理のためにここでは単純にOKを返します。
             return { statusCode: 200, body: "Connect successful" };
         }
         if (event.requestContext.routeKey === "$disconnect") {
-             // $disconnect の削除処理も本来は必要ですが、sendToの内部で410エラー時に対応します。
              return { statusCode: 200, body: "Disconnect successful" };
         }
         return { statusCode: 200, body: "No body" };
@@ -338,7 +336,7 @@ export const handler = async (event) => {
         const body = JSON.parse(event.body || "{}");
         const { type, content } = body;
 
-        // 現在の接続情報を取得 (存在しない場合は新規作成/初期接続時の$connect処理を想定)
+        // 現在の接続情報を取得
         let myConnection = await docClient.send(new GetCommand({
             TableName: CONNECTIONS_TABLE,
             Key: { connectionId }
@@ -350,7 +348,7 @@ export const handler = async (event) => {
             // STEP 1: マッチング (Matching)
             // -----------------------------------------------------
             case "invite": {
-                // 自分のUserIdを保存（$connect時に行っても良い）
+                // UserId保存
                 await docClient.send(new UpdateCommand({
                     TableName: CONNECTIONS_TABLE,
                     Key: { connectionId },
@@ -358,7 +356,6 @@ export const handler = async (event) => {
                     ExpressionAttributeValues: { ":uid": content.hostId }
                 }));
 
-                // targetId を持つ接続を探す (Scan使用: 本番環境ではGSI推奨)
                 const scanResult = await docClient.send(new ScanCommand({
                     TableName: CONNECTIONS_TABLE,
                     FilterExpression: "userId = :target",
@@ -367,7 +364,6 @@ export const handler = async (event) => {
 
                 const targetConn = scanResult.Items && scanResult.Items[0];
                 if (targetConn) {
-                    // 相手に招待状を送る
                     await sendTo(targetConn.connectionId, {
                         type: "invitation",
                         content: { from: content.hostId }
@@ -377,7 +373,6 @@ export const handler = async (event) => {
             }
 
             case "join": {
-                // ホストを探す
                 const scanHost = await docClient.send(new ScanCommand({
                     TableName: CONNECTIONS_TABLE,
                     FilterExpression: "userId = :host",
@@ -386,8 +381,6 @@ export const handler = async (event) => {
                 const hostConn = scanHost.Items && scanHost.Items[0];
 
                 if (hostConn) {
-                    // 相互に opponentConnectionId を保存してマッチング成立
-                    // 1. 自分 (Guest) の更新
                     await docClient.send(new UpdateCommand({
                         TableName: CONNECTIONS_TABLE,
                         Key: { connectionId },
@@ -396,7 +389,6 @@ export const handler = async (event) => {
                         ExpressionAttributeValues: { ":oid": hostConn.connectionId, ":s": "matched" }
                     }));
 
-                    // 2. 相手 (Host) の更新
                     await docClient.send(new UpdateCommand({
                         TableName: CONNECTIONS_TABLE,
                         Key: { connectionId: hostConn.connectionId },
@@ -405,11 +397,10 @@ export const handler = async (event) => {
                         ExpressionAttributeValues: { ":oid": connectionId, ":s": "matched" }
                     }));
 
-                    // 双方に通知
                     const matchPayload = { type: "match_confirmed", content: { status: "ready" } };
                     await Promise.all([
-                        sendTo(connectionId, { ...matchPayload, content: { ...matchPayload.content, opponentId: content.hostId } }), // Guestへ
-                        sendTo(hostConn.connectionId, { ...matchPayload, content: { ...matchPayload.content, opponentId: "guest" } }) // Hostへ
+                        sendTo(connectionId, { ...matchPayload, content: { ...matchPayload.content, opponentId: content.hostId } }),
+                        sendTo(hostConn.connectionId, { ...matchPayload, content: { ...matchPayload.content, opponentId: "guest" } })
                     ]);
                 }
                 break;
@@ -419,7 +410,7 @@ export const handler = async (event) => {
             // STEP 2: 準備 (Preparation)
             // -----------------------------------------------------
             case "select_todo": {
-                // 自分のToDoを保存
+                // ToDoを保存 (マッチング中の状態管理として必要)
                 await docClient.send(new UpdateCommand({
                     TableName: CONNECTIONS_TABLE,
                     Key: { connectionId },
@@ -427,7 +418,6 @@ export const handler = async (event) => {
                     ExpressionAttributeValues: { ":t": content }
                 }));
 
-                // 相手の状態を再取得して確認
                 const updatedMyConnection = await docClient.send(new GetCommand({
                     TableName: CONNECTIONS_TABLE,
                     Key: { connectionId }
@@ -440,17 +430,12 @@ export const handler = async (event) => {
                     }));
                     const opponent = opponentRes.Item;
 
-                    // 相手もToDoを選択済みならゲーム開始
                     if (opponent && opponent.todo) {
                          const startTime = Date.now();
-
-                         // 自分に開始通知 (相手のToDoを送る)
                          await sendTo(connectionId, {
                             type: "game_start",
                             content: { opponentTodo: opponent.todo, startTime }
                          });
-
-                         // 相手に開始通知 (自分のToDoを送る)
                          await sendTo(opponent.connectionId, {
                             type: "game_start",
                             content: { opponentTodo: content, startTime }
@@ -461,89 +446,64 @@ export const handler = async (event) => {
             }
 
             // -----------------------------------------------------
-            // STEP 3: アピールバトル (Battle)
+            // STEP 3: アピールバトル (Battle) - Relay Only
             // -----------------------------------------------------
             case "chat": {
                 const opponentId = myConnection.opponentConnectionId;
-
                 if (opponentId) {
-                    // 1. 相手にチャットを転送
+                    // DBへのログ保存は行わず、相手に転送するだけ
+                    // const currentMsg = content; // Lambda関数内のローカル変数 (処理中のみ保持)
                     await sendTo(opponentId, {
                         type: "chat",
                         content: content
                     });
-
-                    // 2. 自分のチャットログをDBに蓄積 (AI採点用)
-                    const currentLog = myConnection.chatLog || "";
-                    // ログを整形 (相手からのチャットと区別するためプレフィックスを付けても良い)
-                    const newLog = currentLog + (currentLog ? "\n" : "") + `[${connectionId}] ${content}`;
-
-                    await docClient.send(new UpdateCommand({
-                        TableName: CONNECTIONS_TABLE,
-                        Key: { connectionId },
-                        UpdateExpression: "set chatLog = :c",
-                        ExpressionAttributeValues: { ":c": newLog }
-                    }));
                 }
                 break;
             }
 
             // -----------------------------------------------------
-            // STEP 4: 結果 (Result) - クライアントからのトリガーを想定
+            // STEP 4: 結果 (Result) - Relay Only (Client Exchange)
             // -----------------------------------------------------
-            case "finish": {
+            case "share_score": {
                 const opponentId = myConnection.opponentConnectionId;
-                if (!opponentId) break;
-
-                // 相手の情報を取得
-                const opponentRes = await docClient.send(new GetCommand({
-                    TableName: CONNECTIONS_TABLE,
-                    Key: { connectionId: opponentId }
-                }));
-                const opponent = opponentRes.Item;
-
-                // データが揃っているか確認
-                if (!myConnection.todo || !opponent?.todo) {
-                    console.error("Finish command received but ToDo data is missing.");
-                    break;
+                if (opponentId) {
+                    // スコアを相手に転送。サーバーは判定を行わない。
+                    // const scoreData = content; // Lambda関数内のローカル変数
+                    await sendTo(opponentId, {
+                        type: "share_score",
+                        content: content // { score: number, userId: string }
+                    });
                 }
+                break;
+            }
 
-                // --- AI採点処理 (並列実行) ---
-                const [myScoreData, opScoreData] = await Promise.all([
-                    // 自分のスコア計算
-                    fetchAndExtractScore(myConnection.todo.title, myConnection.chatLog),
-                    // 相手のスコア計算
-                    fetchAndExtractScore(opponent.todo.title, opponent.chatLog)
-                ]);
+            case "cleanup": {
+                // ゲーム終了時のクリーンアップ
+                // DBからゲーム関連の属性を削除する
+                await docClient.send(new UpdateCommand({
+                    TableName: CONNECTIONS_TABLE,
+                    Key: { connectionId },
+                    UpdateExpression: "REMOVE todo, opponentConnectionId, #sts, chatLog, userId",
+                    ExpressionAttributeNames: { "#sts": "status" }
+                }));
+                break;
+            }
 
-                // 勝敗判定
-                const myScore = myScoreData.score; // 0が保証されている
-                const opScore = opScoreData.score; // 0が保証されている
+            // -----------------------------------------------------
+            // STEP Extra: AI Score Proxy (CORS対策)
+            // -----------------------------------------------------
+            case "calculate_score": {
+                // クライアントからの計算依頼を受け、AI APIを叩いて結果を返す
+                // content: { todo: string, chat: string }
+                const { todo, chat } = content;
 
-                const winnerId = myScore >= opScore ? connectionId : opponentId;
-                const loserId = myScore < opScore ? connectionId : opponentId;
+                const scoreData = await fetchAndExtractScore(todo, chat);
 
-                const resultPayload = {
-                    type: "result",
-                    content: {
-                        [connectionId]: { score: myScore },
-                        [opponentId]: { score: opScore },
-                        winner: winnerId
-                    }
-                };
-
-                // 結果発表を双方に送信 (並列実行)
-                await Promise.all([
-                    sendTo(connectionId, resultPayload),
-                    sendTo(opponentId, resultPayload)
-                ]);
-
-                // 敗者には「邪魔」を発動
-                await sendTo(loserId, {
-                    type: "jama",
-                    content: "You Lose! Penalty Activated!"
+                // 結果を依頼元に返す
+                await sendTo(connectionId, {
+                    type: "score_calculated",
+                    content: scoreData // { score: number }
                 });
-
                 break;
             }
 
