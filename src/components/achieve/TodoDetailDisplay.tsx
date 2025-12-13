@@ -1,5 +1,5 @@
 import './TodoDetailDisplay.css';
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export function TodoDetailDisplay() {
   const [detail, setDetail] = useState("");
@@ -46,17 +46,6 @@ export function TodoDetailDisplay() {
         <textarea
           value={detail}
           onChange={(e) => setDetail(e.target.value)}
-          rows={6}
-          cols={40}
-        />
-      </div>
-
-      {/* 関連情報入力スペース */}
-      <div className="info-space">
-        <h2>{'\u95a2\u9023\u60c5\u5831'}</h2>
-        <textarea
-          value={info}
-          onChange={(e) => setInfo(e.target.value)}
           rows={6}
           cols={40}
         />
