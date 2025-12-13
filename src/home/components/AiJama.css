@@ -1,0 +1,37 @@
+.ai-jama-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none; /* クリック邪魔しない */
+  transition: transform 1.2s cubic-bezier(.22,.68,.2,1);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+}
+
+.ai-jama-face {
+  width: 90px;
+  height: auto;
+  border-radius: 8px;
+  transform: rotate(-3deg);
+}
+
+.ai-jama-balloon {
+  max-width: 260px;
+  background: #111;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid #ff4444;
+  box-shadow: 0 0 12px rgba(255,0,0,0.35);
+  animation: shake 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes shake {
+  from { transform: translateX(-1px); }
+  to   { transform: translateX(1px); }
+}
