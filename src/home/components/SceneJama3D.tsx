@@ -1,5 +1,5 @@
 // src/home/components/SceneJama3D.tsx
-import React, { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -24,7 +24,7 @@ export default function SceneJama3D({ intensity = 0.3 }: Props) {
     return arr;
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!group.current) return;
     group.current.rotation.y += delta * (0.15 + intensity * 0.6);
     group.current.rotation.x += delta * (0.03 + intensity * 0.2);
@@ -34,12 +34,7 @@ export default function SceneJama3D({ intensity = 0.3 }: Props) {
     <group ref={group}>
       <points>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={positions}
-            count={positions.length / 3}
-            itemSize={3}
-          />
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         </bufferGeometry>
         <pointsMaterial size={0.06 + intensity * 0.12} />
       </points>

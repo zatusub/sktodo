@@ -2,7 +2,6 @@
  * Supabase データベース操作のヘルパー関数
  * 主に todos, friendships, disruptions テーブルの CRUD
  */
-
 import { supabase } from '../lib/supabaseClient'
 import type { User, Todo } from './models'
 

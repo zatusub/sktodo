@@ -39,14 +39,14 @@ export default function Explosion3D({ position = [0, 0, 0], onFinish }: Props) {
 
     // パーティクル更新
     group.current.children.forEach((child, i) => {
-      const p = particles[i];
-      p.pos.addScaledVector(p.vel, delta);
+      const particle = particles[i];
+      particle.pos.addScaledVector(particle.vel, delta);
       // 重力っぽく
-      p.vel.y -= delta * 2.2;
+      particle.vel.y -= delta * 2.2;
 
-      child.position.set(p.pos.x, p.pos.y, p.pos.z);
+      child.position.set(particle.pos.x, particle.pos.y, particle.pos.z);
       const k = 1 - t;
-      child.scale.setScalar(p.s * (0.6 + k));
+      child.scale.setScalar(particle.s * (0.6 + k));
     });
 
     group.current.position.set(position[0], position[1], position[2]);
@@ -54,7 +54,7 @@ export default function Explosion3D({ position = [0, 0, 0], onFinish }: Props) {
 
   return (
     <group ref={group}>
-      {particles.map((p, i) => (
+      {particles.map((_, i) => (
         <mesh key={i}>
           <sphereGeometry args={[1, 10, 10]} />
           <meshStandardMaterial
