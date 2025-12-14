@@ -1,6 +1,6 @@
-import React from 'react';
-import { Text } from '@react-three/drei';
-import type { Todo } from '../../api/models';
+// src/home/components/TodoCard3D.tsx
+import { Text } from "@react-three/drei";
+import type { Todo } from "../../api/models";
 
 interface TodoCard3DProps {
   todo: Todo;
@@ -8,19 +8,18 @@ interface TodoCard3DProps {
   onComplete: (todoId: string) => void;
 }
 
-const TodoCard3D: React.FC<TodoCard3DProps> = ({ todo, index, onComplete }) => {
+export default function TodoCard3D({ todo, index, onComplete }: TodoCard3DProps) {
   const y = 0.3 - index * 0.6;
-  const cardColor = todo.completed ? '#2a3a2a' : '#333';
-  const textColor = todo.completed ? '#888' : '#fff';
+  const cardColor = todo.is_completed ? "#2a3a2a" : "#333";
+  const textColor = todo.is_completed ? "#888" : "#fff";
 
   return (
     <group position={[0, y, 0]}>
-      {/* ToDoカード背景 */}
       <mesh
-        onClick={() => !todo.completed && onComplete(todo.todo_id)}
+        onClick={() => !todo.is_completed && onComplete(todo.todo_id)}
         onPointerOver={(e) => {
-          if (!todo.completed) {
-            (e.object.parent as any).cursor = 'pointer';
+          if (!todo.is_completed) {
+            (e.object.parent as any).cursor = "pointer";
           }
         }}
       >
@@ -28,7 +27,6 @@ const TodoCard3D: React.FC<TodoCard3DProps> = ({ todo, index, onComplete }) => {
         <meshStandardMaterial color={cardColor} />
       </mesh>
 
-      {/* ToDoタイトル */}
       <Text
         position={[-1.4, 0.05, 0.05]}
         fontSize={0.13}
@@ -40,8 +38,7 @@ const TodoCard3D: React.FC<TodoCard3DProps> = ({ todo, index, onComplete }) => {
         {todo.title}
       </Text>
 
-      {/* 完了チェック表示 */}
-      {todo.completed && (
+      {todo.is_completed && (
         <Text
           position={[1.4, 0.05, 0.05]}
           fontSize={0.18}
@@ -54,6 +51,4 @@ const TodoCard3D: React.FC<TodoCard3DProps> = ({ todo, index, onComplete }) => {
       )}
     </group>
   );
-};
-
-export default TodoCard3D;
+}
