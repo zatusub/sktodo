@@ -1,6 +1,6 @@
 // task-jama/components/FriendTodo3D.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Text, Html } from '@react-three/drei';
 
 import { supabase } from '../../lib/supabaseClient';

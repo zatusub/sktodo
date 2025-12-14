@@ -1,6 +1,6 @@
 // task-jama/components/PendingRequests3D.tsx
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Text } from '@react-three/drei';
 
 import { PendingRequest } from '../../types/db'; 

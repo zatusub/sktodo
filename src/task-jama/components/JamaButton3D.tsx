@@ -1,6 +1,6 @@
 // task-jama/components/JamaButton3D.tsx
 
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';

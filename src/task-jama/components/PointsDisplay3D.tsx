@@ -1,6 +1,5 @@
 // task-jama/components/PointsDisplay3D.tsx
 
-import React from 'react';
 import { Text } from '@react-three/drei';
 
 interface PointsDisplay3DProps {
