@@ -10,6 +10,10 @@ import ErrorBoundary from "./ErrorBoundary";
 type Props = {
   userId: string;
   onGoJama?: () => void;
+
+  // 追加：任意（親から渡せば遷移できる）
+  onGoBattle?: () => void;
+  onGoBilling?: () => void;
 };
 
 type UserRow = {
@@ -63,7 +67,12 @@ function makeBreakingNews(username: string, title: string) {
   return patterns[Math.floor(Math.random() * patterns.length)];
 }
 
-export default function HomePage({ userId, onGoJama }: Props) {
+export default function HomePage({
+  userId,
+  onGoJama,
+  onGoBattle,
+  onGoBilling,
+}: Props) {
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
 
@@ -87,15 +96,24 @@ export default function HomePage({ userId, onGoJama }: Props) {
   const overlayVelRef = useRef({ vx: 1.4, vy: 1.1 });
   const overlayTimerRef = useRef<number | null>(null);
 
-  const notDoneTodos = useMemo(() => todos.filter((t) => !t.is_completed), [todos]);
+  const notDoneTodos = useMemo(
+    () => todos.filter((t) => !t.is_completed),
+    [todos]
+  );
 
   const selectedTodo = useMemo(() => {
-    return notDoneTodos.find((t) => t.todo_id === selectedTodoId) ?? notDoneTodos[0] ?? null;
+    return (
+      notDoneTodos.find((t) => t.todo_id === selectedTodoId) ??
+      notDoneTodos[0] ??
+      null
+    );
   }, [notDoneTodos, selectedTodoId]);
 
   const overdueTodos = useMemo(() => {
     const now = Date.now();
-    return notDoneTodos.filter((t) => t.deadline_at && new Date(t.deadline_at).getTime() < now);
+    return notDoneTodos.filter(
+      (t) => t.deadline_at && new Date(t.deadline_at).getTime() < now
+    );
   }, [notDoneTodos]);
 
   const intensity = useMemo(
@@ -124,7 +142,9 @@ export default function HomePage({ userId, onGoJama }: Props) {
       // todos（自分だけ）
       const { data: todoData, error: todoError } = await supabase
         .from("todos")
-        .select("todo_id,user_id,title,description,deadline_at,due_date,is_completed,created_at,updated_at")
+        .select(
+          "todo_id,user_id,title,description,deadline_at,due_date,is_completed,created_at,updated_at"
+        )
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -251,9 +271,15 @@ export default function HomePage({ userId, onGoJama }: Props) {
         };
         const others = notDoneTodos
           .filter((t) => t.todo_id !== selectedTodo.todo_id)
-          .map((t) => ({ title: t.title, description: t.description ?? undefined }));
+          .map((t) => ({
+            title: t.title,
+            description: t.description ?? undefined,
+          }));
 
-        const msg = await critiqueTodoBatch({ targetTodo: target, otherTodos: others });
+        const msg = await critiqueTodoBatch({
+          targetTodo: target,
+          otherTodos: others,
+        });
         setAiMessage(msg || "（空の返答）");
       } catch (e: any) {
         setAiMessage(`（AI失敗）${e?.message ?? String(e)}`);
@@ -316,7 +342,9 @@ export default function HomePage({ userId, onGoJama }: Props) {
   // 完了処理：DB更新 + points +10 + 一覧から消す
   // ----------------------------
   const completeTodo = async (todo: TodoRow) => {
-    const ok = window.confirm(`「${todo.title}」を完了にしますか？\n完了すると一覧から消えます。`);
+    const ok = window.confirm(
+      `「${todo.title}」を完了にしますか？\n完了すると一覧から消えます。`
+    );
     if (!ok) return;
 
     try {
@@ -338,7 +366,11 @@ export default function HomePage({ userId, onGoJama }: Props) {
 
       if (userErr) throw userErr;
 
-      setTodos((prev) => prev.map((t) => (t.todo_id === todo.todo_id ? { ...t, is_completed: true } : t)));
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.todo_id === todo.todo_id ? { ...t, is_completed: true } : t
+        )
+      );
       setMe((prev) => (prev ? { ...prev, points: nextPoints } : prev));
 
       setSelectedTodoId((prevSelected) => {
@@ -373,7 +405,8 @@ export default function HomePage({ userId, onGoJama }: Props) {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "radial-gradient(circle at 30% 20%, rgba(0,0,0,0.08), transparent 55%)",
+                background:
+                  "radial-gradient(circle at 30% 20%, rgba(0,0,0,0.08), transparent 55%)",
               }}
             />
           }
@@ -419,7 +452,15 @@ export default function HomePage({ userId, onGoJama }: Props) {
               }}
               title="ここを画像に差し替え"
             >
-              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontWeight: 900 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  fontWeight: 900,
+                }}
+              >
                 😈
               </div>
             </div>
@@ -428,9 +469,24 @@ export default function HomePage({ userId, onGoJama }: Props) {
               <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }}>
                 ToDo批判AI（自動）{aiLoading ? " / 生成中…" : ""}
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{aiMessage}</div>
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.4,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {aiMessage}
+              </div>
 
-              <div style={{ marginTop: 8, display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                }}
+              >
                 <button
                   onClick={() => setOverlayOn(false)}
                   style={{
@@ -478,7 +534,6 @@ export default function HomePage({ userId, onGoJama }: Props) {
         </div>
 
         <div className="tj-brand">
-          
           <div>
             <img className="tj-logo" src="/logo.png" alt="Sitya Katya ToDo" />
           </div>
@@ -492,7 +547,9 @@ export default function HomePage({ userId, onGoJama }: Props) {
             ) : errMsg ? (
               <div className="tj-newsItem danger">{errMsg}</div>
             ) : (
-              <div className="tj-newsItem warn">のこりのTODO: {notDoneTodos.length} 件</div>
+              <div className="tj-newsItem warn">
+                のこりのTODO: {notDoneTodos.length} 件
+              </div>
             )}
           </div>
         </div>
@@ -509,9 +566,12 @@ export default function HomePage({ userId, onGoJama }: Props) {
           </div>
 
           <div className={`tj-alert ${overdueTodos.length ? "danger" : "ok"}`}>
-            {overdueTodos.length ? `期限切れ ${overdueTodos.length} 件。ニュース確定。` : "期限切れ 0 件。今のうちに。"}
+            {overdueTodos.length
+              ? `期限切れ ${overdueTodos.length} 件。ニュース確定。`
+              : "期限切れ 0 件。今のうちに。"}
           </div>
 
+          {/* ボタン列 */}
           <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
             <button
               className="tj-evilBtn"
@@ -520,17 +580,65 @@ export default function HomePage({ userId, onGoJama }: Props) {
                 fetchFriendBreakingNews();
               }}
               disabled={loading}
+              type="button"
             >
               {loading ? "更新中…" : "再読み込み"}
             </button>
 
             {onGoJama ? (
-              <button className="tj-evilBtn" onClick={onGoJama}>
+              <button className="tj-evilBtn" onClick={onGoJama} type="button">
                 友達のタスクを邪魔しよう
               </button>
             ) : null}
 
-            <button className="tj-evilBtn" onClick={() => setOverlayOn((v) => !v)}>
+            {/* ✅ バトルボタン */}
+            <button
+              className="tj-evilBtn"
+              onClick={() =>
+                onGoBattle ? onGoBattle() : alert("バトル画面はまだ未実装！")
+              }
+              title="友達とバトル（仮）"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255,77,77,0.95), rgba(122,0,255,0.95))",
+                boxShadow: "0 10px 24px rgba(122,0,255,0.25)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+              type="button"
+            >
+              ⚔️ バトル
+            </button>
+
+            {/* ✅ 課金ボタン（金ぴか） */}
+            <button
+              onClick={() =>
+                onGoBilling ? onGoBilling() : alert("課金ページへ（仮）")
+              }
+              title="課金（仮）"
+              type="button"
+              style={{
+                border: "1px solid rgba(0,0,0,0.2)",
+                padding: "10px 14px",
+                borderRadius: 14,
+                cursor: "pointer",
+                color: "#3b2a00",
+                fontWeight: 900,
+                letterSpacing: 0.5,
+                background:
+                  "linear-gradient(180deg, #fff7b0 0%, #ffd54d 20%, #ffbf00 55%, #ffea7a 100%)",
+                boxShadow:
+                  "0 10px 26px rgba(255,191,0,0.35), inset 0 1px 0 rgba(255,255,255,0.7)",
+                textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+              }}
+            >
+              💰 課金
+            </button>
+
+            <button
+              className="tj-evilBtn"
+              onClick={() => setOverlayOn((v) => !v)}
+              type="button"
+            >
               {overlayOn ? "AIを隠す" : "AIを表示"}
             </button>
           </div>
@@ -543,13 +651,18 @@ export default function HomePage({ userId, onGoJama }: Props) {
 
           <div className="tj-taskList">
             {!loading && notDoneTodos.length === 0 ? (
-              <div className="tj-newsItem warn">未完了タスクが0件。…珍しいな。</div>
+              <div className="tj-newsItem warn">
+                未完了タスクが0件。…珍しいな。
+              </div>
             ) : null}
 
             {notDoneTodos.map((t) => {
               const isSelected = t.todo_id === (selectedTodo?.todo_id ?? "");
               return (
-                <div key={t.todo_id} className={`tj-task ${isSelected ? "over" : ""}`}>
+                <div
+                  key={t.todo_id}
+                  className={`tj-task ${isSelected ? "over" : ""}`}
+                >
                   <button
                     className={`tj-taskBtn ${isSelected ? "selected" : ""}`}
                     onClick={() => setSelectedTodoId(t.todo_id)}
@@ -560,10 +673,17 @@ export default function HomePage({ userId, onGoJama }: Props) {
                       <span className="tj-badge me">ME</span>
                       <span className="tj-taskTitleText">{t.title}</span>
                     </div>
-                    <div className="tj-taskDescSmall">{t.description ?? "（descriptionなし）"}</div>
+                    <div className="tj-taskDescSmall">
+                      {t.description ?? "（descriptionなし）"}
+                    </div>
                   </button>
 
-                  <button className="tj-doneBtn" onClick={() => completeTodo(t)} type="button" style={{ whiteSpace: "nowrap" }}>
+                  <button
+                    className="tj-doneBtn"
+                    onClick={() => completeTodo(t)}
+                    type="button"
+                    style={{ whiteSpace: "nowrap" }}
+                  >
                     完了
                   </button>
                 </div>
@@ -571,13 +691,14 @@ export default function HomePage({ userId, onGoJama }: Props) {
             })}
           </div>
         </section>
-
-        
       </main>
 
       <footer className="tj-footer">
         <div className="tj-marquee">
-          <div className="tj-marqueeInner">⚠︎ HOME ⚠︎ 未完了だけ表示 ⚠︎ 完了で+10pt ⚠︎ 速報あり ⚠︎</div>
+          <div className="tj-marqueeInner">
+            {" "}
+            ⚠︎ 早くしなければ邪魔が来る ⚠︎ 完了で+10pt ⚠︎ 害悪あり ⚠︎
+          </div>
         </div>
       </footer>
     </div>
