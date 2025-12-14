@@ -3,31 +3,27 @@ import { useState, useEffect } from "react";
 
 export function TodoDetailDisplay() {
   const [detail, setDetail] = useState("");
-  const [info, setInfo] = useState("");
   const [date, setDate] = useState("");
   const [taskName, setTaskName] = useState("");
 
-  // ‰‰ñƒ[ƒhŽž‚É•Û‘¶Ï‚Ýƒf[ƒ^‚ð“Ç‚Ýž‚Þ
+  // ï¿½ï¿½ï¿½ñƒ[ï¿½hï¿½ï¿½ï¿½É•Û‘ï¿½ï¿½Ï‚Ýƒfï¿½[ï¿½^ï¿½ï¿½Ç‚Ýï¿½ï¿½ï¿½
   useEffect(() => {
     const savedDetail = localStorage.getItem("detail");
-    const savedInfo = localStorage.getItem("info");
     if (savedDetail) setDetail(savedDetail);
-    if (savedInfo) setInfo(savedInfo);
     const savedTaskName = localStorage.getItem("taskName");
     const savedDate = localStorage.getItem("todoDate");
     if (savedTaskName) setTaskName(savedTaskName);
     if (savedDate) setDate(savedDate);
     }, []);
 
-  // •Û‘¶ˆ—
+  // ï¿½Û‘ï¿½ï¿½ï¿½ï¿½ï¿½
   const handleSave = () => {
     localStorage.setItem("detail", detail);
-    localStorage.setItem("info", info);
     localStorage.setItem("todoDate", date);
     localStorage.setItem("taskName", taskName);
     
     alert("\u4fdd\u5b58\u3057\u307e\u3057\u305f\uff01");
-    // u•Û‘¶‚µ‚Ü‚µ‚½Iv
+    // ï¿½uï¿½Û‘ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½Iï¿½v
   };
 
   return (
@@ -40,7 +36,7 @@ export function TodoDetailDisplay() {
       onChange={(e) => setDate(e.target.value)} />
       </p>
 
-      {/* Ú×“ü—ÍƒXƒy[ƒX */}
+      {/* ï¿½Ú×“ï¿½ï¿½ÍƒXï¿½yï¿½[ï¿½X */}
       <div className="detail-space">
         <h2>{'\u8a73\u7d30'}</h2>
         <textarea
