@@ -1,14 +1,15 @@
-import { AchieveButton } from './components/achieve/AchieveButton';
-import './App.css'
-import { TodoDetailDisplay } from './components/achieve/TodoDetailDisplay';
-import { CrossButton } from './components/achieve/CrossButton';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TaskJama from './task-jama/task-jama';
 import Calendar from './components/calendar/Calendar';
 import { Auth } from './components/authorize/auth';
+import HomePage from './home/HomePage';
+import './App.css';
+
 function App() {
   const [showTaskJama, setShowTaskJama] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const todos = [
     { content: "プロジェクト提出", deadline: "2025-12-15" },
@@ -41,21 +42,21 @@ function App() {
         onBackToHome={() => setShowTaskJama(false)}
          />
         <Calendar todos={todos} />
+        <div style={{ position: 'fixed', top: 12, left: 12, zIndex: 10000 }}>
+             <button onClick={() => setShowTaskJama(false)}>戻る</button>
+        </div>
       </>
     );
   }
 
   return (
-    <>
-      <AchieveButton />
-      <TodoDetailDisplay />
-      <CrossButton />
-      <div style={{ position: 'fixed', top: 12, right: 12 }}>
-        <button onClick={() => setShowTaskJama(true)}>友達のタスクを邪魔しよう</button>
-      </div>
-    </>
-   
-  )
+    <HomePage
+      userId={userId}
+      onGoJama={() => setShowTaskJama(true)}
+      onGoBilling={() => navigate('/money')}
+      onGoBattle={() => alert('バトル画面はまだ未実装！')}
+    />
+  );
 }
 
-export default App
+export default App;

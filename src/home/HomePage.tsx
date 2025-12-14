@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "./home.css";
 import SceneJama3D from "./components/SceneJama3D";
 
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabaseClient";
 import { critiqueTodoBatch } from "../lib/aiApi";
 import ErrorBoundary from "./ErrorBoundary";
 
