@@ -5,7 +5,9 @@ import Calendar from './components/calendar/Calendar';
 import { Auth } from './components/authorize/auth';
 import HomePage from './home/HomePage';
 import './App.css';
-import { useNavigate } from 'react-router-dom';
+import AchieveButton from './components/achieve/AchieveButton';
+import { TodoDetailDisplay } from './components/achieve/TodoDetailDisplay';
+import { CrossButton } from './components/achieve/CrossButton';
 
 function App() {
   const [showTaskJama, setShowTaskJama] = useState(false);
@@ -57,7 +59,7 @@ function App() {
       userId={userId}
       onGoJama={() => setShowTaskJama(true)}
       onGoBilling={() => navigate('/money')}
-      onGoBattle={() => alert('バトル画面はまだ未実装！')}
+      onGoBattle={() => navigate('matching')}
     />
       <AchieveButton />
       <TodoDetailDisplay />
