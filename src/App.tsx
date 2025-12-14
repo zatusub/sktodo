@@ -5,6 +5,7 @@ import Calendar from './components/calendar/Calendar';
 import { Auth } from './components/authorize/auth';
 import HomePage from './home/HomePage';
 import './App.css';
+import { useNavigate } from 'react-router-dom';
 
 function App() {
   const [showTaskJama, setShowTaskJama] = useState(false);
@@ -29,6 +30,7 @@ function App() {
   // Handle Login
   const handleLogin = (id: string) => {
     setUserId(id);
+    localStorage.setItem('sktodo_user_id', id);
   };
 
   if (!userId) {
@@ -50,13 +52,23 @@ function App() {
   }
 
   return (
+    <>
     <HomePage
       userId={userId}
       onGoJama={() => setShowTaskJama(true)}
       onGoBilling={() => navigate('/money')}
       onGoBattle={() => alert('バトル画面はまだ未実装！')}
     />
-  );
+      <AchieveButton />
+      <TodoDetailDisplay />
+      <CrossButton />
+      <div style={{ position: 'fixed', top: 12, right: 12, display: 'flex', gap: '8px' }}>
+        <button onClick={() => navigate('/matching')} style={{ backgroundColor: '#ff4444', color: 'white' }}>対戦をする</button>
+        <button onClick={() => setShowTaskJama(true)}>友達のタスクを邪魔しよう</button>
+      </div>
+    </>
+   
+  )
 }
 
 export default App;
