@@ -38,7 +38,9 @@ function App() {
   if (showTaskJama) {
     return (
       <>
-        <TaskJama userId={userId} />
+        <TaskJama userId={userId}
+        onBackToHome={() => setShowTaskJama(false)}
+         />
         <Calendar todos={todos} />
         <div style={{ position: 'fixed', top: 12, left: 12, zIndex: 10000 }}>
              <button onClick={() => setShowTaskJama(false)}>戻る</button>

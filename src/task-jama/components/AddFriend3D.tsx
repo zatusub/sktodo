@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabaseClient';
 
 // --- サブコンポーネント: 成功メッセージ ---
 const SuccessModal: React.FC<{ onBack: () => void }> = ({ onBack }) => (
-    <Html position={[0, 0, 0]} transform>
+    <Html position={[0, 0, -10]} transform>
         <div style={{
             background: 'rgba(0, 255, 0, 0.9)', 
             padding: '20px',
