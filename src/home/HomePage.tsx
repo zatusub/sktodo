@@ -1,5 +1,6 @@
 // src/home/HomePage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./home.css";
 import SceneJama3D from "./components/SceneJama3D";
 
@@ -8,10 +9,11 @@ import { critiqueTodoBatch } from "../lib/aiApi";
 import ErrorBoundary from "./ErrorBoundary";
 
 type Props = {
-  userId: string;
-  onGoJama?: () => void;
+  // ★ main.tsx から直接 <HomePage /> の場合に備えて optional
+  userId?: string;
 
-  // 追加：任意（親から渡せば遷移できる）
+  // 画面遷移（親から渡す場合）
+  onGoJama?: () => void;
   onGoBattle?: () => void;
   onGoBilling?: () => void;
 };
@@ -29,7 +31,7 @@ type TodoRow = {
   title: string;
   description: string | null;
   deadline_at: string | null;
-  due_date: string | null; // ★ 追加
+  due_date: string | null; // ★ 期限（日付）
   is_completed: boolean;
   created_at: string;
   updated_at: string;
@@ -68,11 +70,16 @@ function makeBreakingNews(username: string, title: string) {
 }
 
 export default function HomePage({
-  userId,
+  userId: propUserId,
   onGoJama,
   onGoBattle,
   onGoBilling,
 }: Props) {
+  const navigate = useNavigate();
+
+  // ★ userId は props or localStorage から取る
+  const userId = propUserId ?? localStorage.getItem("sktodo_user_id") ?? "";
+
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
 
@@ -95,6 +102,13 @@ export default function HomePage({
   const [overlayPos, setOverlayPos] = useState({ x: 40, y: 140 });
   const overlayVelRef = useRef({ vx: 1.4, vy: 1.1 });
   const overlayTimerRef = useRef<number | null>(null);
+
+  // ★ タスク追加フォーム（追加）
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newDueDate, setNewDueDate] = useState(""); // YYYY-MM-DD
+  const [adding, setAdding] = useState(false);
 
   const notDoneTodos = useMemo(
     () => todos.filter((t) => !t.is_completed),
@@ -127,6 +141,12 @@ export default function HomePage({
   const fetchHomeData = async () => {
     setLoading(true);
     setErrMsg("");
+
+    if (!userId) {
+      setErrMsg("userId が見つかりません（ログイン済みIDが必要）");
+      setLoading(false);
+      return;
+    }
 
     try {
       // users
@@ -172,6 +192,12 @@ export default function HomePage({
   // ----------------------------
   const fetchFriendBreakingNews = async () => {
     setFriendNewsLoading(true);
+
+    if (!userId) {
+      setFriendNewsLoading(false);
+      setFriendNews([]);
+      return;
+    }
 
     try {
       const today = formatTodayYYYYMMDDLocal();
@@ -347,6 +373,11 @@ export default function HomePage({
     );
     if (!ok) return;
 
+    if (!userId) {
+      alert("userId がありません（ログインが必要）");
+      return;
+    }
+
     try {
       const { error: todoErr } = await supabase
         .from("todos")
@@ -381,10 +412,59 @@ export default function HomePage({
 
       setAiMessage(`【完了】「${todo.title}」？やればできるじゃん。次は？`);
 
-      // 自分が完了したら、ついでにニュース更新（任意）
       fetchFriendBreakingNews();
     } catch (e: any) {
       alert(`完了処理に失敗: ${e?.message ?? String(e)}`);
+    }
+  };
+
+  // ----------------------------
+  // ★ タスク追加（タイトル・内容・日付）
+  // ----------------------------
+  const addTodo = async () => {
+    if (!userId) {
+      alert("userId がありません（ログインが必要）");
+      return;
+    }
+
+    if (!newTitle.trim()) {
+      alert("タイトルは必須です");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const { data, error } = await supabase
+        .from("todos")
+        .insert({
+          user_id: userId,
+          title: newTitle.trim(),
+          description: newDesc.trim() ? newDesc.trim() : null,
+          due_date: newDueDate ? newDueDate : null,
+          is_completed: false,
+        })
+        .select(
+          "todo_id,user_id,title,description,deadline_at,due_date,is_completed,created_at,updated_at"
+        )
+        .single();
+
+      if (error) throw error;
+
+      const row = data as TodoRow;
+
+      setTodos((prev) => [row, ...prev]);
+      setSelectedTodoId(row.todo_id);
+
+      setNewTitle("");
+      setNewDesc("");
+      setNewDueDate("");
+      setShowAddForm(false);
+
+      setAiMessage("新しいタスクか…覚悟はいいか？");
+    } catch (e: any) {
+      alert(`タスク追加に失敗: ${e?.message ?? String(e)}`);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -392,9 +472,24 @@ export default function HomePage({
   const breakingText = useMemo(() => {
     if (friendNewsLoading) return "速報を収集中…";
     if (!friendNews || friendNews.length === 0) return "速報はありません";
-    // テロップなので連結して流す
     return friendNews.join("　／　");
   }, [friendNews, friendNewsLoading]);
+
+  // ----------------------------
+  // ★ 「タスク邪魔」ボタンの動作
+  // ----------------------------
+  const goJama = () => {
+    if (!userId) {
+      alert("ログインが必要です（userId がありません）");
+      return;
+    }
+    if (onGoJama) {
+      onGoJama();
+      return;
+    }
+    // ルートがある前提：/task-jama
+    navigate("/task-jama");
+  };
 
   return (
     <div className="tj-root">
@@ -525,7 +620,6 @@ export default function HomePage({
       )}
 
       <header className="tj-header">
-        {/* ★ テレビの速報テロップ（横スクロール） */}
         <div className="tj-breakingBar">
           <div className="tj-breakingLabel">速報</div>
           <div className="tj-breakingMarquee">
@@ -585,11 +679,21 @@ export default function HomePage({
               {loading ? "更新中…" : "再読み込み"}
             </button>
 
-            {onGoJama ? (
-              <button className="tj-evilBtn" onClick={onGoJama} type="button">
-                友達のタスクを邪魔しよう
-              </button>
-            ) : null}
+            {/* ✅ タスク邪魔（常に表示） */}
+            <button
+              className="tj-evilBtn"
+              onClick={goJama}
+              title="友達のタスクを邪魔しに行く"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255,0,0,0.95), rgba(120,0,200,0.95))",
+                boxShadow: "0 10px 24px rgba(120,0,200,0.35)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+              type="button"
+            >
+              😈 タスク邪魔
+            </button>
 
             {/* ✅ バトルボタン */}
             <button
@@ -634,6 +738,22 @@ export default function HomePage({
               💰 課金
             </button>
 
+            {/* ✅ タスク追加（フォーム開閉） */}
+            <button
+              className="tj-evilBtn"
+              onClick={() => setShowAddForm((v) => !v)}
+              title="タスク追加"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(0,160,255,0.95), rgba(0,210,140,0.95))",
+                boxShadow: "0 10px 24px rgba(0,210,140,0.25)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+              type="button"
+            >
+              ➕ タスク追加
+            </button>
+
             <button
               className="tj-evilBtn"
               onClick={() => setOverlayOn((v) => !v)}
@@ -642,6 +762,92 @@ export default function HomePage({
               {overlayOn ? "AIを隠す" : "AIを表示"}
             </button>
           </div>
+
+          {/* タスク追加フォーム */}
+          {showAddForm ? (
+            <div
+              style={{
+                marginTop: 14,
+                padding: 12,
+                borderRadius: 14,
+                background: "rgba(0,0,0,0.06)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div style={{ fontWeight: 900 }}>➕ タスク追加</div>
+
+              <input
+                placeholder="タイトル（必須）"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  border: "1px solid #ccc",
+                }}
+              />
+
+              <textarea
+                placeholder="内容（任意）"
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                rows={3}
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  border: "1px solid #ccc",
+                  resize: "vertical",
+                }}
+              />
+
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <label style={{ fontSize: 12, fontWeight: 700 }}>日付</label>
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  style={{
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid #ccc",
+                    width: "fit-content",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  type="button"
+                  style={{
+                    border: "none",
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    background: "rgba(0,0,0,0.12)",
+                  }}
+                >
+                  キャンセル
+                </button>
+
+                <button
+                  onClick={addTodo}
+                  disabled={adding}
+                  type="button"
+                  className="tj-evilBtn"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(0,160,255,0.95), rgba(0,210,140,0.95))",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                  }}
+                >
+                  {adding ? "追加中…" : "追加する"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="tj-card tj-tasksCard">
@@ -676,6 +882,11 @@ export default function HomePage({
                     <div className="tj-taskDescSmall">
                       {t.description ?? "（descriptionなし）"}
                     </div>
+                    {t.due_date ? (
+                      <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+                        期限: {t.due_date}
+                      </div>
+                    ) : null}
                   </button>
 
                   <button
