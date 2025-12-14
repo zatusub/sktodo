@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { v4 as uuidv4 } from 'uuid';
 
 interface AuthProps {
     onLogin: (userId: string) => void;
@@ -19,7 +20,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         try {
             // 1. Try to insert (Sign up)
             // Generate UUID client-side because DB doesn't seem to auto-generate it
-            const newUserId = self.crypto.randomUUID();
+            const newUserId = uuidv4();
             
             // Remove .single() to avoid "Cannot coerce..." error if returns 0 or >1 rows (though insert should range 0-1)
             const { data: insertData, error: insertError } = await supabase

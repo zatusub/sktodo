@@ -1,7 +1,18 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { v4 as uuidv4 } from 'uuid';
 import './index.css'
+
+// Polyfill for randomUUID in non-secure contexts
+if (!self.crypto) {
+  // @ts-ignore
+  self.crypto = {};
+}
+if (!self.crypto.randomUUID) {
+  self.crypto.randomUUID = () => uuidv4() as `${string}-${string}-${string}-${string}-${string}`;
+}
+
 import App from './App.js'
 import CalendarTestPage from './pages/CalendarTestPage'
 import MoneyPage from './pages/MoneyPage'
