@@ -3,15 +3,12 @@
 import React, { useState } from 'react';
 import { Text } from '@react-three/drei';
 
+import { PendingRequest } from '../../types/db'; 
 
-interface Request {
-  id: string;
-  name: string;
-}
-
+// --- Props定義 ---
 interface PendingRequests3DProps {
-  pendingRequests: Request[];
-  onProcessRequest: (requestId: string, action: 'ACCEPT' | 'REJECT') => void;
+  pendingRequests: PendingRequest[];
+  onProcessRequest: (friendshipId: string, action: 'ACCEPT' | 'REJECT') => void;
   onBack: () => void;
 }
 
@@ -28,12 +25,12 @@ const PendingRequests3D: React.FC<PendingRequests3DProps> = ({ pendingRequests, 
       </Text>
 
       {/* 戻るボタン */}
-      <group position={[1, 2.8, 0]}> 
+      <group position={[1, 2.8, 0]}> 
         <mesh onClick={onBack} onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}>
-          <planeGeometry args={[0.8, 0.4]} /> {/* サイズ統一 */}
-          <meshStandardMaterial color="#555" /> {/* カラー統一 */}
+          <planeGeometry args={[0.8, 0.4]} /> 
+          <meshStandardMaterial color="#555" /> 
         </mesh>
-        <Text position={[0, 0, 0.01]} fontSize={0.14} color="white" anchorX="center" anchorY="middle"> {/* テキストサイズ統一 */}
+        <Text position={[0, 0, 0.01]} fontSize={0.14} color="white" anchorX="center" anchorY="middle"> 
           戻る
         </Text>
       </group>
@@ -46,13 +43,13 @@ const PendingRequests3D: React.FC<PendingRequests3DProps> = ({ pendingRequests, 
       ) : (
         pendingRequests.map((request, index) => {
           const yPos = LIST_START_Y - index * ITEM_SPACING;
-          const isHovered = hoveredId === request.id;
+          const isHovered = hoveredId === request.friendship_id; 
 
           return (
             <group 
-              key={request.id} 
+              key={request.friendship_id} 
               position={[0, yPos, 0]}
-              onPointerOver={() => setHoveredId(request.id)}
+              onPointerOver={() => setHoveredId(request.friendship_id)}
               onPointerOut={() => setHoveredId(null)}
             >
               {/* リストアイテムの背景 */}
@@ -63,13 +60,14 @@ const PendingRequests3D: React.FC<PendingRequests3DProps> = ({ pendingRequests, 
 
               {/* ユーザー名 */}
               <Text position={[-1.5, 0, 0.01]} fontSize={0.2} color="white" anchorX="left">
-                {request.name}
+                {request.username}
               </Text>
 
               {/* 承認ボタン */}
               <mesh 
                 position={[0.7, 0, 0.01]} 
-                onClick={() => onProcessRequest(request.id, 'ACCEPT')}
+                onClick={() => onProcessRequest(request.friendship_id, 'ACCEPT')}
+                onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}
               >
                 <boxGeometry args={[0.5, 0.4, 0.1]} />
                 <meshStandardMaterial color="#28a745" /> {/* 緑色 */}
@@ -81,7 +79,8 @@ const PendingRequests3D: React.FC<PendingRequests3DProps> = ({ pendingRequests, 
               {/* 拒否ボタン */}
               <mesh 
                 position={[1.3, 0, 0.01]} 
-                onClick={() => onProcessRequest(request.id, 'REJECT')}
+                onClick={() => onProcessRequest(request.friendship_id, 'REJECT')}
+                onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}
               >
                 <boxGeometry args={[0.5, 0.4, 0.1]} />
                 <meshStandardMaterial color="#dc3545" /> {/* 赤色 */}

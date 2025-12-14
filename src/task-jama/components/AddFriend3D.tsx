@@ -1,154 +1,250 @@
 // task-jama/components/AddFriend3D.tsx
 
-import React, { useState, memo } from 'react'; 
+import React, { useState, memo, useCallback } from 'react';
 import { Text, Html } from '@react-three/drei';
 
-interface AddFriend3DProps {
-  onBack: () => void;
-}
+import { supabase } from '../../lib/supabaseClient';
 
-const InputForm3D = memo<{ 
-  inputEmail: string, 
-  setInputEmail: (email: string) => void,
-  onBack: () => void,
-  setViewState: (state: 'INPUT' | 'SUCCESS') => void,
-  message: string,
-  setMessage: (msg: string) => void
-}>(({ inputEmail, setInputEmail, onBack, setViewState, message, setMessage }) => {
-    const [isHovering, setIsHovering] = useState(false);
+// --- サブコンポーネント: 成功メッセージ ---
+const SuccessModal: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <Html position={[0, 0, 0]} transform>
+        <div style={{
+            background: 'rgba(0, 255, 0, 0.9)', 
+            padding: '20px',
+            borderRadius: '10px', 
+            textAlign: 'center', 
+            color: 'white'
+        }}>
+            <h3>リクエストを送信しました！</h3>
+            <p>相手の承認をお待ちください。</p>
+            <button 
+                onClick={onBack} 
+                style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer' }}
+            >
+                戻る
+            </button>
+        </div>
+    </Html>
+);
 
-    const handleSubmit = () => {
-      if (!inputEmail || !inputEmail.includes('@')) {
-        setMessage('有効なメールアドレスを入力してください。');
-        return;
-      }
-      setMessage('リクエスト送信中...');
-      
-      setTimeout(() => {
-        setViewState('SUCCESS');
-        setInputEmail(''); // 成功したらクリア
-      }, 1000);
-    };
-    
-    const handleKeySubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        handleSubmit();
-      }
-    };
+// --- サブコンポーネント: フォーム ---
+const InputForm3D = memo(({ 
+    inputEmail, 
+    setInputEmail, 
+    setViewState, 
+    message, 
+    setMessage,
+    currentUserId
+}: {
+    inputEmail: string,
+    setInputEmail: (email: string) => void,
+    onBack: () => void, 
+    setViewState: (state: 'INPUT' | 'SUCCESS') => void,
+    message: string,
+    setMessage: (msg: string) => void,
+    currentUserId: string
+}) => {
+    
+    // HTML Inputフィールドの変更を処理
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputEmail(e.target.value);
+    }, [setInputEmail]);
 
-    return (
-      <group position={[0, 0, 0]}>
-        <Text position={[0, 1.5, 0]} fontSize={0.3} color="white">
-          友達のアドレスを入力
-        </Text>
+    // Enterキー押下を処理
+    const handleKeySubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    };
+    
+    // handleSubmit 関数 (Supabase 接続ロジック)
+    const handleSubmit = async () => {
+        setMessage(''); // メッセージをクリア
 
-        {/* 戻るボタンの位置調整 */}
-        <group position={[1, 2.8, 0]}> 
-        <mesh onClick={onBack} onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}>
-          <planeGeometry args={[0.8, 0.4]} /> {/* サイズ統一 */}
-          <meshStandardMaterial color="#555" /> {/* カラー統一 */}
-        </mesh>
-        <Text position={[0, 0, 0.01]} fontSize={0.14} color="white" anchorX="center" anchorY="middle"> {/* テキストサイズ統一 */}
-          戻る
-        </Text>
-        </group>
-        
-        {/* HTML入力フィールド*/}
-        <Html 
-          position={[0, 0.5, -5]} 
-          transform 
-          occlude 
-          style={{ width: '200px' }} // 200px に縮小
-        >
-          <input
-            type="email"
-            placeholder="メールアドレス"
-            value={inputEmail}
-            onChange={(e) => { setInputEmail(e.target.value); setMessage(''); }}
-            onKeyDown={handleKeySubmit}
-            style={{ 
-              width: '85%', 
-              padding: '5px', // パディングをさらに縮小
-              border: '2px solid #2b8a3e', 
-              borderRadius: '8px', 
-              backgroundColor: '#333', 
-              color: 'white',
-              fontSize: '14px' 
-            }}
-          />
-        </Html>
-        
-        {/* メッセージ表示 */}
-        {message && (
-          <Text position={[0, -1.5, 0]} fontSize={0.15} color="#dc3545">
-            {message}
-          </Text>
-        )}
+        if (!inputEmail || !inputEmail.includes('@')) {
+            setMessage('有効なメールアドレスを入力してください。');
+            return;
+        }
 
-        {/* 送信ボタン */}
-        <mesh 
-          position={[0, -2, 0]} 
-          onClick={handleSubmit}
-          onPointerOver={() => setIsHovering(true)}
-          onPointerOut={() => setIsHovering(false)}
-          onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}
-        >
-          <boxGeometry args={[3, 0.6, 0.2]} />
-          <meshStandardMaterial color={isHovering ? '#36c05a' : '#2b8a3e'} />
-          <Text position={[0, 0, 0.11]} fontSize={0.2} color="white">
-            リクエストを送信
-          </Text>
-        </mesh>
-      </group>
-    );
+        // 1. リクエスト送信中ステータス
+        setMessage('リクエスト送信中...');
+        
+        try {
+            // 2. メールアドレスで相手ユーザーを検索
+        const { data: targetUser, error: userSearchError } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('email', inputEmail)
+          .maybeSingle();
+
+        if (userSearchError) {
+             console.error('User search error:', userSearchError);
+             setMessage('ユーザー検索中にエラーが発生しました。');
+             return;
+        }
+
+        if (!targetUser) {
+          setMessage('指定されたメールアドレスのユーザーは見つかりませんでした。');
+          return;
+        }
+
+            const targetUserId = targetUser.user_id;
+
+            if (targetUserId === currentUserId) {
+                setMessage('自分自身にフレンドリクエストは送信できません。');
+                return;
+            }
+
+            // 3. 既存のフレンドシップがないか確認（重複リクエスト防止）
+            const { data: existingFriendship } = await supabase
+                .from('friendships')
+                .select('*')
+                .or(`and(user_id_1.eq.${currentUserId},user_id_2.eq.${targetUserId}),and(user_id_1.eq.${targetUserId},user_id_2.eq.${currentUserId})`);
+
+            if (existingFriendship && existingFriendship.length > 0) {
+                // 既にフレンドシップが存在する
+                const status = existingFriendship[0].status;
+                if (status === 'ACCEPTED') {
+                    setMessage('このユーザーとは既にフレンドです。');
+                } else if (status === 'PENDING') {
+                    setMessage('既にリクエストを送信済みか、相手からリクエストが来ています。');
+                } else if (status === 'REJECTED') {
+                    setMessage('リクエストは拒否されました。しばらく経ってから再度お試しください。');
+                }
+                return;
+            }
+
+            // 4. フレンドリクエストの挿入
+            const [id1, id2] = currentUserId < targetUserId 
+                ? [currentUserId, targetUserId] 
+                : [targetUserId, currentUserId];
+
+            const { error: insertError } = await supabase
+                .from('friendships')
+                .insert({
+                    user_id_1: id1, 
+                    user_id_2: id2,   
+                    status: 'PENDING',
+                    requester_id: currentUserId,
+                    created_at: new Date().toISOString()
+                });
+
+            if (insertError) {
+                throw insertError; 
+            }
+
+            // 5. 成功
+            setViewState('SUCCESS');
+            setInputEmail(''); 
+
+        } catch (error) {
+            console.error('フレンドリクエスト送信中にエラー:', error);
+            setMessage('リクエスト送信中に予期せぬエラーが発生しました。');
+        }
+    };
+
+    return (
+        <Html position={[0, -0.5, -5]} transform>
+            <div style={{
+                background: 'rgba(50, 50, 50, 0)',
+                padding: '10px', 
+                borderRadius: '10px', 
+                color: 'white', 
+                width: '185px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+            }}>
+                <input
+                    type="email"
+                    value={inputEmail}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeySubmit}
+                    placeholder="フレンドのメールアドレス"
+                    style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        margin: '0 0 10px 0',
+                        borderRadius: '5px', 
+                        border: 'none',
+                        boxSizing: 'border-box'
+                    }}
+                />
+                <button 
+                    onClick={handleSubmit} 
+                    style={{ 
+                        width: '100%', 
+                        padding: '10px 20px', 
+                        backgroundColor: '#007bff',
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '5px', 
+                        cursor: 'pointer', 
+                        margin: '0',
+                        boxSizing: 'border-box'
+                    }}
+                >
+                    リクエスト送信
+                </button>
+
+                {message && (
+                    <p style={{ color: message.includes('成功') ? 'lightgreen' : 'red', marginTop: '10px', fontSize: '14px' }}>
+                        {message}
+                    </p>
+                )}
+            </div>
+        </Html>
+    );
 });
 
 
-const AddFriend3D: React.FC<AddFriend3DProps> = ({ onBack }) => {
-  const [viewState, setViewState] = useState<'INPUT' | 'SUCCESS'>('INPUT');
-  const [inputEmail, setInputEmail] = useState(''); 
-  const [message, setMessage] = useState(''); 
+// --- メインコンポーネント: AddFriend3D ---
+interface AddFriend3DProps {
+    onBack: () => void;
+    currentUserId: string;
+}
 
-  const SuccessModal: React.FC = () => { 
-    const [isHovering, setIsHovering] = useState(false); 
+const AddFriend3D: React.FC<AddFriend3DProps> = ({ onBack, currentUserId }) => {
+    const [inputEmail, setInputEmail] = useState('');
+    const [viewState, setViewState] = useState<'INPUT' | 'SUCCESS'>('INPUT');
+    const [message, setMessage] = useState('');
 
-    const handleOk = () => { onBack(); };
-    return (
-      <group position={[0, 0, 1]}>
-        <mesh> {/* ...略... */ } </mesh>
-        <Text position={[0, 0.5, 1.01]} fontSize={0.3} color="white">リクエスト！</Text>
-        <Text position={[0, 0.1, 1.01]} fontSize={0.15} color="#bbb">リクエストを送信しました</Text>
-        <mesh 
-          position={[0, -0.6, 1.01]} 
-          onClick={handleOk} 
-          onPointerOver={() => setIsHovering(true)} 
-          onPointerOut={() => setIsHovering(false)} 
-          onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}
-        >
-          <boxGeometry args={[1.5, 0.5, 0.1]} />
-          <meshStandardMaterial color={isHovering ? '#36c05a' : '#2b8a3e'} />
-          <Text position={[0, 0, 0.06]} fontSize={0.2} color="white">OK</Text>
-        </mesh>
-      </group>
-    );
-  };
+    const handleBackWrapper = () => {
+        setInputEmail('');
+        setViewState('INPUT');
+        setMessage('');
+        onBack();
+    };
 
+    return (
+        <group position={[0, 0, 0]}>
 
-  return (
-    <group>
-      {viewState === 'INPUT' && (
-        <InputForm3D 
-          inputEmail={inputEmail}
-          setInputEmail={setInputEmail}
-          onBack={onBack}
-          setViewState={setViewState}
-          message={message}
-          setMessage={setMessage}
-        />
-      )}
-      {viewState === 'SUCCESS' && <SuccessModal />}
-    </group>
-  );
+          {/* 戻るボタン */}
+          <group position={[1, 2.8, 0]}> 
+            <mesh onClick={onBack} onPointerMove={(e: any) => { ((e.object.parent as any).canvas.style.cursor = 'pointer'); }}>
+              <planeGeometry args={[0.8, 0.4]} /> 
+              <meshStandardMaterial color="#555" /> 
+            </mesh>
+            <Text position={[0, 0, 0.01]} fontSize={0.14} color="white" anchorX="center" anchorY="middle"> 
+              戻る
+            </Text>
+          </group>
+
+            {viewState === 'INPUT' ? (
+                <InputForm3D
+                    inputEmail={inputEmail}
+                    setInputEmail={setInputEmail}
+                    onBack={handleBackWrapper}
+                    setViewState={setViewState}
+                    message={message}
+                    setMessage={setMessage}
+                    currentUserId={currentUserId}
+                />
+            ) : (
+                <SuccessModal onBack={handleBackWrapper} />
+            )}
+        </group>
+    );
 };
 
 export default AddFriend3D;
