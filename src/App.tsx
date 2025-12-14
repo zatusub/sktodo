@@ -37,7 +37,9 @@ function App() {
   if (showTaskJama) {
     return (
       <>
-        <TaskJama userId={userId} />
+        <TaskJama userId={userId}
+        onBackToHome={() => setShowTaskJama(false)}
+         />
         <Calendar todos={todos} />
       </>
     );
