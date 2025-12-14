@@ -316,7 +316,7 @@ export const BattlePage = ({ userId: propUserId }: BattlePageProps) => {
           }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0, 255, 255, 0.05)' }}>
               <span style={{ color: '#00ffff', fontWeight: 'bold', letterSpacing: '0.1em' }}>YOU</span>
-              <div style={{ fontSize: '1.2em', fontWeight: 500 }}>{isJamaActive ? createMojibakeText(myTodo) : myTodo}</div>
+              <div style={{ fontSize: '1.2em', fontWeight: 500 }}>{isJamaActive ? createMojibakeText(myTodo, myTodo, 1).disguisedText : myTodo}</div>
             </div>
             
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
